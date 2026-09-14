@@ -603,23 +603,41 @@ async function createPage() {
                 showToast("Please enter a share password.");
                 return;
             }
+const passwordResponse = await fetch(
+    "/.netlify/functions/password",
+    {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization:
+                `Bearer ${currentSession.access_token}`
+        },
+        body: JSON.stringify({
+            action: "set",
+            checklistId: list.id,
+            password: sharePassword
+        })
+    }
+);
 
-            const passwordResponse =
-                await fetch("/.netlify/functions/password", {
-                    method: "POST",
+const passwordResult =
+    await passwordResponse.json();
 
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization:
-                            `Bearer ${currentSession.access_token}`
-                    },
+console.log(
+    "Set password response:",
+    passwordResponse.status,
+    passwordResult
+);
 
-                    body: JSON.stringify({
-                        action: "set",
-                        checklistId: list.id,
-                        password: sharePassword
-                    })
-                });
+if (!passwordResponse.ok) {
+    showToast(
+        passwordResult.error ||
+        "Could not set password."
+    );
+    return;
+}
+
+showToast("Password saved successfully!");
 
             const passwordResult =
                 await passwordResponse.json();
