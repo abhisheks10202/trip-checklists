@@ -639,8 +639,6 @@ if (!passwordResponse.ok) {
 
 showToast("Password saved successfully!");
 
-            const passwordResult =
-                await passwordResponse.json();
 
             if (!passwordResponse.ok) {
                 showToast(passwordResult.error || "Password setup failed.");
