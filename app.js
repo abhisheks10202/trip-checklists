@@ -1,14 +1,14 @@
 const SUPABASE_URL =
-  "https://ufyijnqhqwlnlfyyfncl.supabase.co";
+    "https://ufyijnqhqwlnlfyyfncl.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_--jdcO776FaSYi3AUTCKWg_PCfINlGC";
+    "sb_publishable_--jdcO776FaSYi3AUTCKWg_PCfINlGC";
 
 const { createClient } = window.supabase;
 
 const db = createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
 );
 
 const main = document.getElementById("main");
@@ -18,44 +18,44 @@ const toast = document.getElementById("toast");
 let currentSession = null;
 
 function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add("show");
+    toast.textContent = message;
+    toast.classList.add("show");
 
-  setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2500);
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2500);
 }
 
 function escapeHtml(value = "") {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 function slugify(text) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 60);
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .slice(0, 60);
 }
 
 async function getSession() {
-  const { data } = await db.auth.getSession();
-  currentSession = data.session;
-  return currentSession;
+    const { data } = await db.auth.getSession();
+    currentSession = data.session;
+    return currentSession;
 }
 
 async function refreshNav() {
-  await getSession();
+    await getSession();
 
-  if (currentSession) {
-    nav.innerHTML = `
+    if (currentSession) {
+        nav.innerHTML = `
       <div class="nav-links">
         <a href="/" class="btn secondary">Home</a>
         <a href="/?page=dashboard" class="btn secondary">Dashboard</a>
@@ -63,25 +63,25 @@ async function refreshNav() {
       </div>
     `;
 
-    document
-      .getElementById("logoutBtn")
-      ?.addEventListener("click", async () => {
-        await db.auth.signOut();
-        window.location.href = "/";
-      });
+        document
+            .getElementById("logoutBtn")
+            ?.addEventListener("click", async () => {
+                await db.auth.signOut();
+                window.location.href = "/";
+            });
 
-  } else {
-    nav.innerHTML = `
+    } else {
+        nav.innerHTML = `
       <div class="nav-links">
         <a href="/?page=login" class="btn secondary">Login</a>
         <a href="/?page=signup" class="btn">Get Started</a>
       </div>
     `;
-  }
+    }
 }
 
 function layout(content) {
-  return `
+    return `
     <div class="container">
       ${content}
     </div>
@@ -89,9 +89,9 @@ function layout(content) {
 }
 
 async function homePage() {
-  await refreshNav();
+    await refreshNav();
 
-  main.innerHTML = layout(`
+    main.innerHTML = layout(`
     <section class="hero">
       <div class="badge">✈️ Travel planning made simple</div>
 
@@ -104,8 +104,7 @@ async function homePage() {
       </p>
 
       <div class="actions">
-        ${
-          currentSession
+        ${currentSession
             ? `<a href="/?page=create" class="btn">+ Create Checklist</a>`
             : `<a href="/?page=signup" class="btn">Create Your First Checklist</a>`
         }
@@ -124,36 +123,36 @@ async function homePage() {
     </section>
   `);
 
-  const { data, error } = await db
-    .from("checklists")
-    .select("*")
-    .eq("is_public", true)
-    .eq("has_password", false)
-    .order("created_at", { ascending: false })
-    .limit(12);
+    const { data, error } = await db
+        .from("checklists")
+        .select("*")
+        .eq("is_public", true)
+        .eq("has_password", false)
+        .order("created_at", { ascending: false })
+        .limit(12);
 
-  const container = document.getElementById("publicLists");
+    const container = document.getElementById("publicLists");
 
-  if (error) {
-    container.innerHTML = `
+    if (error) {
+        container.innerHTML = `
       <div class="empty">
         Unable to load checklists.
       </div>
     `;
-    return;
-  }
+        return;
+    }
 
-  if (!data?.length) {
-    container.innerHTML = `
+    if (!data?.length) {
+        container.innerHTML = `
       <div class="empty">
         No public checklists yet.<br>
         Be the first to create one!
       </div>
     `;
-    return;
-  }
+        return;
+    }
 
-  container.innerHTML = data.map(list => `
+    container.innerHTML = data.map(list => `
     <a class="card" href="/checklist/${encodeURIComponent(list.slug)}">
       <span class="badge">📋 Checklist</span>
 
@@ -167,7 +166,7 @@ async function homePage() {
 }
 
 function authPage(mode = "login") {
-  main.innerHTML = layout(`
+    main.innerHTML = layout(`
     <div class="form-card">
 
       <div class="auth-tabs">
@@ -191,8 +190,7 @@ function authPage(mode = "login") {
       </h2>
 
       <p style="color:var(--muted)">
-        ${
-          mode === "login"
+        ${mode === "login"
             ? "Sign in to manage your travel checklists."
             : "Create and share checklists for every trip."
         }
@@ -229,57 +227,60 @@ function authPage(mode = "login") {
     </div>
   `);
 
-  document.getElementById("loginTab").onclick = () => {
-    window.location.href = "/?page=login";
-  };
+    document.getElementById("loginTab").onclick = () => {
+        window.location.href = "/?page=login";
+    };
 
-  document.getElementById("signupTab").onclick = () => {
-    window.location.href = "/?page=signup";
-  };
+    document.getElementById("signupTab").onclick = () => {
+        window.location.href = "/?page=signup";
+    };
 
-  document.getElementById("authForm").onsubmit = async (event) => {
-    event.preventDefault();
+    document.getElementById("authForm").onsubmit = async (event) => {
+        event.preventDefault();
 
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
 
-    let result;
+        let result;
 
-    if (mode === "login") {
-      result = await db.auth.signInWithPassword({
-        email,
-        password
-      });
-    } else {
-      result = await db.auth.signUp({
-        email,
-        password
-      });
-    }
+        if (mode === "login") {
+            result = await db.auth.signInWithPassword({
+                email,
+                password
+            });
+        } else {
+            result = await db.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo: window.location.origin
+                }
+            });
+        }
 
-    if (result.error) {
-      showToast(result.error.message);
-      return;
-    }
+        if (result.error) {
+            showToast(result.error.message);
+            return;
+        }
 
-    if (mode === "signup" && !result.data.session) {
-      showToast("Check your email to confirm your account.");
-      return;
-    }
+        if (mode === "signup" && !result.data.session) {
+            showToast("Check your email to confirm your account.");
+            return;
+        }
 
-    window.location.href = "/?page=dashboard";
-  };
+        window.location.href = "/?page=dashboard";
+    };
 }
 
 async function dashboardPage() {
-  if (!await getSession()) {
-    window.location.href = "/?page=login";
-    return;
-  }
+    if (!await getSession()) {
+        window.location.href = "/?page=login";
+        return;
+    }
 
-  await refreshNav();
+    await refreshNav();
 
-  main.innerHTML = layout(`
+    main.innerHTML = layout(`
     <section class="section">
 
       <div class="section-title">
@@ -302,33 +303,33 @@ async function dashboardPage() {
     </section>
   `);
 
-  const { data, error } = await db
-    .from("checklists")
-    .select("*")
-    .eq("owner_id", currentSession.user.id)
-    .order("created_at", { ascending: false });
+    const { data, error } = await db
+        .from("checklists")
+        .select("*")
+        .eq("owner_id", currentSession.user.id)
+        .order("created_at", { ascending: false });
 
-  const container = document.getElementById("myLists");
+    const container = document.getElementById("myLists");
 
-  if (error) {
-    container.innerHTML = `
+    if (error) {
+        container.innerHTML = `
       <div class="empty">${escapeHtml(error.message)}</div>
     `;
-    return;
-  }
+        return;
+    }
 
-  if (!data.length) {
-    container.innerHTML = `
+    if (!data.length) {
+        container.innerHTML = `
       <div class="empty">
         You haven't created a checklist yet.
         <br><br>
         <a href="/?page=create" class="btn">Create one</a>
       </div>
     `;
-    return;
-  }
+        return;
+    }
 
-  container.innerHTML = data.map(list => `
+    container.innerHTML = data.map(list => `
     <div class="card">
 
       <span class="badge">
@@ -358,38 +359,38 @@ async function dashboardPage() {
     </div>
   `).join("");
 
-  document.querySelectorAll(".delete-list").forEach(button => {
-    button.onclick = async () => {
+    document.querySelectorAll(".delete-list").forEach(button => {
+        button.onclick = async () => {
 
-      if (!confirm("Delete this checklist permanently?")) {
-        return;
-      }
+            if (!confirm("Delete this checklist permanently?")) {
+                return;
+            }
 
-      const { error } = await db
-        .from("checklists")
-        .delete()
-        .eq("id", button.dataset.id);
+            const { error } = await db
+                .from("checklists")
+                .delete()
+                .eq("id", button.dataset.id);
 
-      if (error) {
-        showToast(error.message);
-        return;
-      }
+            if (error) {
+                showToast(error.message);
+                return;
+            }
 
-      showToast("Checklist deleted.");
-      dashboardPage();
-    };
-  });
+            showToast("Checklist deleted.");
+            dashboardPage();
+        };
+    });
 }
 
 async function createPage() {
-  if (!await getSession()) {
-    window.location.href = "/?page=login";
-    return;
-  }
+    if (!await getSession()) {
+        window.location.href = "/?page=login";
+        return;
+    }
 
-  await refreshNav();
+    await refreshNav();
 
-  main.innerHTML = layout(`
+    main.innerHTML = layout(`
     <div class="form-card">
 
       <h2>Create a checklist</h2>
@@ -487,239 +488,239 @@ async function createPage() {
     </div>
   `);
 
-  document.getElementById("access").onchange = event => {
-    document.getElementById("passwordGroup").style.display =
-      event.target.value === "password"
-        ? "block"
-        : "none";
-  };
+    document.getElementById("access").onchange = event => {
+        document.getElementById("passwordGroup").style.display =
+            event.target.value === "password"
+                ? "block"
+                : "none";
+    };
 
-  document.getElementById("addItem").onclick = () => {
-    const input = document.createElement("input");
+    document.getElementById("addItem").onclick = () => {
+        const input = document.createElement("input");
 
-    input.className = "item-input";
-    input.placeholder = "Another item";
-    input.style.marginTop = "8px";
+        input.className = "item-input";
+        input.placeholder = "Another item";
+        input.style.marginTop = "8px";
 
-    document.getElementById("items").appendChild(input);
-  };
+        document.getElementById("items").appendChild(input);
+    };
 
-  document.getElementById("createForm").onsubmit = async event => {
-    event.preventDefault();
+    document.getElementById("createForm").onsubmit = async event => {
+        event.preventDefault();
 
-    const title = document.getElementById("title").value.trim();
-    const description =
-      document.getElementById("description").value.trim();
+        const title = document.getElementById("title").value.trim();
+        const description =
+            document.getElementById("description").value.trim();
 
-    const access =
-      document.getElementById("access").value;
+        const access =
+            document.getElementById("access").value;
 
-    const sharePassword =
-      document.getElementById("sharePassword").value;
+        const sharePassword =
+            document.getElementById("sharePassword").value;
 
-    const category =
-      document.getElementById("category").value.trim();
+        const category =
+            document.getElementById("category").value.trim();
 
-    let slug = slugify(title);
+        let slug = slugify(title);
 
-    if (!slug) {
-      showToast("Please enter a valid title.");
-      return;
-    }
+        if (!slug) {
+            showToast("Please enter a valid title.");
+            return;
+        }
 
-    const { data: existing } = await db
-      .from("checklists")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
+        const { data: existing } = await db
+            .from("checklists")
+            .select("id")
+            .eq("slug", slug)
+            .maybeSingle();
 
-    if (existing) {
-      slug += "-" + Math.random().toString(36).slice(2, 7);
-    }
+        if (existing) {
+            slug += "-" + Math.random().toString(36).slice(2, 7);
+        }
 
-    const isPublic = access !== "private";
+        const isPublic = access !== "private";
 
-    const { data: list, error } = await db
-      .from("checklists")
-      .insert({
-        title,
-        description,
-        slug,
-        owner_id: currentSession.user.id,
-        is_public: isPublic,
-        has_password: access === "password"
-      })
-      .select()
-      .single();
+        const { data: list, error } = await db
+            .from("checklists")
+            .insert({
+                title,
+                description,
+                slug,
+                owner_id: currentSession.user.id,
+                is_public: isPublic,
+                has_password: access === "password"
+            })
+            .select()
+            .single();
 
-    if (error) {
-      showToast(error.message);
-      return;
-    }
+        if (error) {
+            showToast(error.message);
+            return;
+        }
 
-    const { data: cat, error: categoryError } =
-      await db
-        .from("categories")
-        .insert({
-          checklist_id: list.id,
-          name: category,
-          position: 0
-        })
-        .select()
-        .single();
+        const { data: cat, error: categoryError } =
+            await db
+                .from("categories")
+                .insert({
+                    checklist_id: list.id,
+                    name: category,
+                    position: 0
+                })
+                .select()
+                .single();
 
-    if (categoryError) {
-      showToast(categoryError.message);
-      return;
-    }
+        if (categoryError) {
+            showToast(categoryError.message);
+            return;
+        }
 
-    const itemInputs =
-      [...document.querySelectorAll(".item-input")];
+        const itemInputs =
+            [...document.querySelectorAll(".item-input")];
 
-    const itemRows = itemInputs
-      .map((input, index) => ({
-        category_id: cat.id,
-        text: input.value.trim(),
-        position: index
-      }))
-      .filter(item => item.text);
+        const itemRows = itemInputs
+            .map((input, index) => ({
+                category_id: cat.id,
+                text: input.value.trim(),
+                position: index
+            }))
+            .filter(item => item.text);
 
-    if (itemRows.length) {
-      const { error: itemsError } =
-        await db
-          .from("items")
-          .insert(itemRows);
+        if (itemRows.length) {
+            const { error: itemsError } =
+                await db
+                    .from("items")
+                    .insert(itemRows);
 
-      if (itemsError) {
-        showToast(itemsError.message);
-        return;
-      }
-    }
+            if (itemsError) {
+                showToast(itemsError.message);
+                return;
+            }
+        }
 
-    if (access === "password") {
+        if (access === "password") {
 
-      if (!sharePassword) {
-        showToast("Please enter a share password.");
-        return;
-      }
+            if (!sharePassword) {
+                showToast("Please enter a share password.");
+                return;
+            }
 
-      const passwordResponse =
-        await fetch("/.netlify/functions/password", {
-          method: "POST",
+            const passwordResponse =
+                await fetch("/.netlify/functions/password", {
+                    method: "POST",
 
-          headers: {
-            "Content-Type": "application/json",
-            Authorization:
-              `Bearer ${currentSession.access_token}`
-          },
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization:
+                            `Bearer ${currentSession.access_token}`
+                    },
 
-          body: JSON.stringify({
-            action: "set",
-            checklistId: list.id,
-            password: sharePassword
-          })
-        });
+                    body: JSON.stringify({
+                        action: "set",
+                        checklistId: list.id,
+                        password: sharePassword
+                    })
+                });
 
-      const passwordResult =
-        await passwordResponse.json();
+            const passwordResult =
+                await passwordResponse.json();
 
-      if (!passwordResponse.ok) {
-        showToast(passwordResult.error || "Password setup failed.");
-        return;
-      }
-    }
+            if (!passwordResponse.ok) {
+                showToast(passwordResult.error || "Password setup failed.");
+                return;
+            }
+        }
 
-    window.location.href =
-      `/checklist/${encodeURIComponent(slug)}`;
-  };
+        window.location.href =
+            `/checklist/${encodeURIComponent(slug)}`;
+    };
 }
 
 async function fetchChecklist(slug) {
 
-  const { data, error } = await db
-    .from("checklists")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
+    const { data, error } = await db
+        .from("checklists")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
+    if (error) {
+        throw error;
+    }
 
-  return data;
+    return data;
 }
 
 async function loadPublicChecklist(list) {
 
-  const { data: categories, error: catError } =
-    await db
-      .from("categories")
-      .select("*")
-      .eq("checklist_id", list.id)
-      .order("position");
+    const { data: categories, error: catError } =
+        await db
+            .from("categories")
+            .select("*")
+            .eq("checklist_id", list.id)
+            .order("position");
 
-  if (catError) throw catError;
+    if (catError) throw catError;
 
-  for (const category of categories) {
+    for (const category of categories) {
 
-    const { data: items, error } =
-      await db
-        .from("items")
-        .select("*")
-        .eq("category_id", category.id)
-        .order("position");
+        const { data: items, error } =
+            await db
+                .from("items")
+                .select("*")
+                .eq("category_id", category.id)
+                .order("position");
 
-    if (error) throw error;
+        if (error) throw error;
 
-    category.items = items;
-  }
+        category.items = items;
+    }
 
-  return categories;
+    return categories;
 }
 
 function getProgress(listId, categories) {
 
-  const key = `triplist:${listId}`;
+    const key = `triplist:${listId}`;
 
-  const saved =
-    JSON.parse(localStorage.getItem(key) || "{}");
+    const saved =
+        JSON.parse(localStorage.getItem(key) || "{}");
 
-  let total = 0;
-  let completed = 0;
+    let total = 0;
+    let completed = 0;
 
-  categories.forEach(category => {
-    category.items.forEach(item => {
-      total++;
+    categories.forEach(category => {
+        category.items.forEach(item => {
+            total++;
 
-      if (saved[item.id]) {
-        completed++;
-      }
+            if (saved[item.id]) {
+                completed++;
+            }
+        });
     });
-  });
 
-  return {
-    total,
-    completed,
-    percent: total
-      ? Math.round(completed / total * 100)
-      : 0,
-    saved
-  };
+    return {
+        total,
+        completed,
+        percent: total
+            ? Math.round(completed / total * 100)
+            : 0,
+        saved
+    };
 }
 
 function saveProgress(listId, saved) {
-  localStorage.setItem(
-    `triplist:${listId}`,
-    JSON.stringify(saved)
-  );
+    localStorage.setItem(
+        `triplist:${listId}`,
+        JSON.stringify(saved)
+    );
 }
 
 function renderChecklist(list, categories) {
 
-  const progress =
-    getProgress(list.id, categories);
+    const progress =
+        getProgress(list.id, categories);
 
-  main.innerHTML = layout(`
+    main.innerHTML = layout(`
     <section class="checklist-header">
 
       <span class="badge">
@@ -766,9 +767,8 @@ function renderChecklist(list, categories) {
           🖨️ Print / PDF
         </button>
 
-        ${
-          currentSession &&
-          currentSession.user.id === list.owner_id
+        ${currentSession &&
+            currentSession.user.id === list.owner_id
             ? `
               <a
                 class="btn secondary"
@@ -786,21 +786,18 @@ function renderChecklist(list, categories) {
 
     <section id="checklistBody">
 
-      ${
-        categories.length
-          ? categories.map(category => `
+      ${categories.length
+            ? categories.map(category => `
               <div class="category">
 
                 <h3>
                   ${escapeHtml(category.name)}
                 </h3>
 
-                ${
-                  category.items.map(item => `
+                ${category.items.map(item => `
                     <label
-                      class="item ${
-                        progress.saved[item.id] ? "done" : ""
-                      }"
+                      class="item ${progress.saved[item.id] ? "done" : ""
+                }"
                     >
 
                       <input
@@ -819,82 +816,82 @@ function renderChecklist(list, categories) {
 
               </div>
             `).join("")
-          : `<div class="empty">No items yet.</div>`
-      }
+            : `<div class="empty">No items yet.</div>`
+        }
 
     </section>
   `);
 
-  document.querySelectorAll(
-    'input[type="checkbox"][data-item]'
-  ).forEach(checkbox => {
+    document.querySelectorAll(
+        'input[type="checkbox"][data-item]'
+    ).forEach(checkbox => {
 
-    checkbox.onchange = () => {
+        checkbox.onchange = () => {
 
-      const saved =
-        getProgress(list.id, categories).saved;
+            const saved =
+                getProgress(list.id, categories).saved;
 
-      saved[checkbox.dataset.item] =
-        checkbox.checked;
+            saved[checkbox.dataset.item] =
+                checkbox.checked;
 
-      saveProgress(list.id, saved);
+            saveProgress(list.id, saved);
 
-      checkbox
-        .closest(".item")
-        .classList.toggle(
-          "done",
-          checkbox.checked
-        );
+            checkbox
+                .closest(".item")
+                .classList.toggle(
+                    "done",
+                    checkbox.checked
+                );
 
-      const updated =
-        getProgress(list.id, categories);
+            const updated =
+                getProgress(list.id, categories);
 
-      document.getElementById("progressBar").style.width =
-        `${updated.percent}%`;
+            document.getElementById("progressBar").style.width =
+                `${updated.percent}%`;
 
-      const progressText =
-        document.querySelector(".progress-box strong");
+            const progressText =
+                document.querySelector(".progress-box strong");
 
-      progressText.textContent =
-        `${updated.percent}% complete`;
-    };
-  });
+            progressText.textContent =
+                `${updated.percent}% complete`;
+        };
+    });
 
-  document.getElementById("printBtn").onclick =
-    () => window.print();
+    document.getElementById("printBtn").onclick =
+        () => window.print();
 
-  document.getElementById("copyBtn").onclick =
-    async () => {
+    document.getElementById("copyBtn").onclick =
+        async () => {
 
-      await navigator.clipboard.writeText(
-        window.location.href
-      );
+            await navigator.clipboard.writeText(
+                window.location.href
+            );
 
-      showToast("Link copied!");
-    };
+            showToast("Link copied!");
+        };
 
-  document.getElementById("shareBtn").onclick =
-    async () => {
+    document.getElementById("shareBtn").onclick =
+        async () => {
 
-      if (navigator.share) {
-        await navigator.share({
-          title: list.title,
-          text: list.description || "Travel checklist",
-          url: window.location.href
-        });
-      } else {
-        await navigator.clipboard.writeText(
-          window.location.href
-        );
+            if (navigator.share) {
+                await navigator.share({
+                    title: list.title,
+                    text: list.description || "Travel checklist",
+                    url: window.location.href
+                });
+            } else {
+                await navigator.clipboard.writeText(
+                    window.location.href
+                );
 
-        showToast("Share link copied!");
-      }
-    };
+                showToast("Share link copied!");
+            }
+        };
 }
 
 async function protectedChecklistPage(slug, list) {
 
-  main.innerHTML = `
+    main.innerHTML = `
     <div class="lock-card">
 
       <div class="lock-icon">🔒</div>
@@ -925,73 +922,73 @@ async function protectedChecklistPage(slug, list) {
     </div>
   `;
 
-  document.getElementById("unlockForm").onsubmit =
-    async event => {
+    document.getElementById("unlockForm").onsubmit =
+        async event => {
 
-      event.preventDefault();
+            event.preventDefault();
 
-      const password =
-        document.getElementById("unlockPassword").value;
+            const password =
+                document.getElementById("unlockPassword").value;
 
-      const response =
-        await fetch("/.netlify/functions/password", {
-          method: "POST",
+            const response =
+                await fetch("/.netlify/functions/password", {
+                    method: "POST",
 
-          headers: {
-            "Content-Type": "application/json"
-          },
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
-          body: JSON.stringify({
-            action: "verify",
-            slug,
-            password
-          })
-        });
+                    body: JSON.stringify({
+                        action: "verify",
+                        slug,
+                        password
+                    })
+                });
 
-      const result = await response.json();
+            const result = await response.json();
 
-      if (!response.ok) {
-        showToast(result.error || "Wrong password.");
-        return;
-      }
+            if (!response.ok) {
+                showToast(result.error || "Wrong password.");
+                return;
+            }
 
-      renderChecklist(
-        result.checklist,
-        result.categories
-      );
-    };
+            renderChecklist(
+                result.checklist,
+                result.categories
+            );
+        };
 }
 
 async function checklistPage(slug) {
 
-  await refreshNav();
+    await refreshNav();
 
-  try {
+    try {
 
-    const list = await fetchChecklist(slug);
+        const list = await fetchChecklist(slug);
 
-    if (!list) {
-      main.innerHTML = layout(`
+        if (!list) {
+            main.innerHTML = layout(`
         <div class="empty">
           <h2>Checklist not found</h2>
           <p>This checklist may have been deleted.</p>
         </div>
       `);
-      return;
-    }
+            return;
+        }
 
-    if (list.has_password) {
-      await protectedChecklistPage(slug, list);
-      return;
-    }
+        if (list.has_password) {
+            await protectedChecklistPage(slug, list);
+            return;
+        }
 
-    if (!list.is_public) {
+        if (!list.is_public) {
 
-      if (
-        !currentSession ||
-        currentSession.user.id !== list.owner_id
-      ) {
-        main.innerHTML = `
+            if (
+                !currentSession ||
+                currentSession.user.id !== list.owner_id
+            ) {
+                main.innerHTML = `
           <div class="lock-card">
             <div class="lock-icon">🔒</div>
             <h2>Private checklist</h2>
@@ -999,77 +996,77 @@ async function checklistPage(slug) {
           </div>
         `;
 
-        return;
-      }
-    }
+                return;
+            }
+        }
 
-    const categories =
-      await loadPublicChecklist(list);
+        const categories =
+            await loadPublicChecklist(list);
 
-    renderChecklist(list, categories);
+        renderChecklist(list, categories);
 
-  } catch (error) {
+    } catch (error) {
 
-    console.error(error);
+        console.error(error);
 
-    main.innerHTML = `
+        main.innerHTML = `
       <div class="empty">
         <h2>Something went wrong</h2>
         <p>${escapeHtml(error.message)}</p>
       </div>
     `;
-  }
+    }
 }
 
 async function router() {
 
-  const path =
-    window.location.pathname.replace(/\/+$/, "") || "/";
+    const path =
+        window.location.pathname.replace(/\/+$/, "") || "/";
 
-  const params =
-    new URLSearchParams(window.location.search);
+    const params =
+        new URLSearchParams(window.location.search);
 
-  const page =
-    params.get("page");
+    const page =
+        params.get("page");
 
-  if (path.startsWith("/checklist/")) {
+    if (path.startsWith("/checklist/")) {
 
-    const slug =
-      decodeURIComponent(
-        path.split("/checklist/")[1]
-      );
+        const slug =
+            decodeURIComponent(
+                path.split("/checklist/")[1]
+            );
 
-    await checklistPage(slug);
-    return;
-  }
+        await checklistPage(slug);
+        return;
+    }
 
-  if (page === "login") {
-    await refreshNav();
-    authPage("login");
-    return;
-  }
+    if (page === "login") {
+        await refreshNav();
+        authPage("login");
+        return;
+    }
 
-  if (page === "signup") {
-    await refreshNav();
-    authPage("signup");
-    return;
-  }
+    if (page === "signup") {
+        await refreshNav();
+        authPage("signup");
+        return;
+    }
 
-  if (page === "dashboard") {
-    await dashboardPage();
-    return;
-  }
+    if (page === "dashboard") {
+        await dashboardPage();
+        return;
+    }
 
-  if (page === "create") {
-    await createPage();
-    return;
-  }
+    if (page === "create") {
+        await createPage();
+        return;
+    }
 
-  await homePage();
+    await homePage();
 }
 
 db.auth.onAuthStateChange(() => {
-  setTimeout(() => refreshNav(), 0);
+    setTimeout(() => refreshNav(), 0);
 });
 
 router();
