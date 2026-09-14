@@ -262,7 +262,39 @@ export default async (request) => {
         success: true
       });
     }
+// -------------------------------------------------------
+// GET CHECKLIST
+// -------------------------------------------------------
 
+if (action === "get") {
+
+    const { slug } = body;
+
+    if (!slug) {
+        return json(
+            { error: "Slug is required." },
+            400
+        );
+    }
+
+    const lists = await supabaseRequest(
+        `checklists?slug=eq.${encodeURIComponent(slug)}&select=id,title,description,slug,owner_id,is_public,has_password`
+    );
+
+    const list = lists?.[0];
+
+    if (!list) {
+        return json(
+            { error: "Checklist not found." },
+            404
+        );
+    }
+
+    return json({
+        success: true,
+        checklist: list
+    });
+}
     // -------------------------------------------------------
     // VERIFY PASSWORD
     // -------------------------------------------------------
