@@ -651,8 +651,22 @@ showToast("Password saved successfully!");
     };
 }
 
-async function fetchChecklist(slug) {
+// async function fetchChecklist(slug) {
 
+//     const { data, error } = await db
+//         .from("checklists")
+//         .select("*")
+//         .eq("slug", slug)
+//         .maybeSingle();
+
+//     if (error) {
+//         throw error;
+//     }
+
+//     return data;
+// }
+
+async function fetchChecklist(slug) {
     const { data, error } = await db
         .from("checklists")
         .select("*")
@@ -664,6 +678,32 @@ async function fetchChecklist(slug) {
     }
 
     return data;
+}
+
+async function fetchProtectedChecklist(slug) {
+    const response = await fetch(
+        "/.netlify/functions/password",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                action: "get",
+                slug: slug
+            })
+        }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            result.error || "Checklist not found."
+        );
+    }
+
+    return result.checklist;
 }
 
 async function loadPublicChecklist(list) {
@@ -975,29 +1015,109 @@ async function protectedChecklistPage(slug, list) {
         };
 }
 
+// async function checklistPage(slug) {
+
+//     await refreshNav();
+
+//     try {
+
+//         const list = await fetchChecklist(slug);
+
+//         if (!list) {
+//             main.innerHTML = layout(`
+//         <div class="empty">
+//           <h2>Checklist not found</h2>
+//           <p>This checklist may have been deleted.</p>
+//         </div>
+//       `);
+//             return;
+//         }
+
+//         if (list.has_password) {
+//             await protectedChecklistPage(slug, list);
+//             return;
+//         }
+
+//         if (!list.is_public) {
+
+//             if (
+//                 !currentSession ||
+//                 currentSession.user.id !== list.owner_id
+//             ) {
+//                 main.innerHTML = `
+//           <div class="lock-card">
+//             <div class="lock-icon">🔒</div>
+//             <h2>Private checklist</h2>
+//             <p>Only the owner can access this checklist.</p>
+//           </div>
+//         `;
+
+//                 return;
+//             }
+//         }
+
+//         const categories =
+//             await loadPublicChecklist(list);
+
+//         renderChecklist(list, categories);
+
+//     } catch (error) {
+
+//         console.error(error);
+
+//         main.innerHTML = `
+//       <div class="empty">
+//         <h2>Something went wrong</h2>
+//         <p>${escapeHtml(error.message)}</p>
+//       </div>
+//     `;
+//     }
+// }
 async function checklistPage(slug) {
 
     await refreshNav();
 
     try {
 
-        const list = await fetchChecklist(slug);
+        // First try the normal Supabase query
+        let list = await fetchChecklist(slug);
+
+        // If Supabase RLS prevents an anonymous visitor
+        // from seeing the protected checklist, get its
+        // basic information through the Netlify function.
+        if (!list) {
+            try {
+                list = await fetchProtectedChecklist(slug);
+            } catch (error) {
+                console.error(
+                    "Protected checklist lookup failed:",
+                    error
+                );
+            }
+        }
 
         if (!list) {
             main.innerHTML = layout(`
-        <div class="empty">
-          <h2>Checklist not found</h2>
-          <p>This checklist may have been deleted.</p>
-        </div>
-      `);
+                <div class="empty">
+                    <h2>Checklist not found</h2>
+                    <p>This checklist may have been deleted.</p>
+                </div>
+            `);
+
             return;
         }
 
+        // Password protected
         if (list.has_password) {
-            await protectedChecklistPage(slug, list);
+            await protectedChecklistPage(
+                slug,
+                list
+            );
+
             return;
         }
 
+        // Private checklist
         if (!list.is_public) {
 
             if (
@@ -1005,12 +1125,16 @@ async function checklistPage(slug) {
                 currentSession.user.id !== list.owner_id
             ) {
                 main.innerHTML = `
-          <div class="lock-card">
-            <div class="lock-icon">🔒</div>
-            <h2>Private checklist</h2>
-            <p>Only the owner can access this checklist.</p>
-          </div>
-        `;
+                    <div class="lock-card">
+                        <div class="lock-icon">🔒</div>
+
+                        <h2>Private checklist</h2>
+
+                        <p>
+                            Only the owner can access this checklist.
+                        </p>
+                    </div>
+                `;
 
                 return;
             }
@@ -1019,18 +1143,21 @@ async function checklistPage(slug) {
         const categories =
             await loadPublicChecklist(list);
 
-        renderChecklist(list, categories);
+        renderChecklist(
+            list,
+            categories
+        );
 
     } catch (error) {
 
         console.error(error);
 
         main.innerHTML = `
-      <div class="empty">
-        <h2>Something went wrong</h2>
-        <p>${escapeHtml(error.message)}</p>
-      </div>
-    `;
+            <div class="empty">
+                <h2>Something went wrong</h2>
+                <p>${escapeHtml(error.message)}</p>
+            </div>
+        `;
     }
 }
 
