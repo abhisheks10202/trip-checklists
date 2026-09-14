@@ -639,18 +639,9 @@ if (!passwordResponse.ok) {
 
 showToast("Password saved successfully!");
 
-
-            if (!passwordResponse.ok) {
-                showToast(passwordResult.error || "Password setup failed.");
-                return;
-            }
-        }
-
-        window.location.href =
-            `/checklist/${encodeURIComponent(slug)}`;
-    };
-}
-
+window.location.href =
+    `/checklist/${encodeURIComponent(slug)}`;
+    
 async function fetchChecklist(slug) {
 
     const { data, error } = await db
