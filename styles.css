@@ -432,3 +432,19 @@ textarea {
     box-shadow: none;
   }
 }
+
+.site-footer {
+    text-align: center;
+    padding: 40px 20px 30px;
+    margin-top: 70px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.site-footer p {
+    margin: 0;
+}
+
+.site-footer strong {
+    color: var(--text);
+}
