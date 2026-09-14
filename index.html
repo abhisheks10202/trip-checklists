@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>TripList — Plan. Pack. Travel.</title>
+  <meta
+    name="description"
+    content="Create, share and complete travel checklists."
+  >
+
+  <link rel="stylesheet" href="/styles.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <div id="app">
+
+    <!-- NAVBAR -->
+    <header class="navbar">
+      <a href="/" class="brand">
+        <span class="brand-icon">🏔️</span>
+        <span>TripList</span>
+      </a>
+
+      <nav id="nav"></nav>
+    </header>
+
+    <!-- MAIN -->
+    <main id="main"></main>
+
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
