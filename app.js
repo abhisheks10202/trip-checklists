@@ -1587,23 +1587,27 @@ async function expensesPage() {
             ).value.trim();
 
 
-        const { data, error } = await db
-            .from("expense_groups")
-            .insert({
+        const checklistId =
+    new URLSearchParams(window.location.search).get("checklist");
 
-                owner_id:
-                    currentSession.user.id,
 
-                checklist_id:
-                    checklistId || null,
 
-                name,
+const { data: group, error } = await db
+    .from("expense_groups")
+    .insert({
+        checklist_id: checklistId,
+        name: groupName,
+        description: groupDescription,
+        owner_id: currentSession.user.id
+    })
+    .select()
+    .single();
 
-                description
-
-            })
-            .select()
-            .single();
+if (error) {
+    console.error("Create group error:", error);
+    showToast(error.message);
+    return;
+}
 
 
         if (error) {
