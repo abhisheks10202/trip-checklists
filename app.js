@@ -2511,28 +2511,26 @@ if (error) {
 
         }
 
+const { data: expense, error } = await db
+    .from("expenses")
+    .insert({
+        group_id: groupId,
+        description: description,
+        amount: Number(amount),
+        paid_by: paidBy,
+        split_method: splitType,
+        split_type: splitType
+    })
+    .select()
+    .single();
 
-        const { data: expense, error } =
-            await db
-                .from("expenses")
-                .insert({
+if (error) {
+    console.error("Add expense error:", error);
+    showToast(error.message);
+    return;
+}
 
-                    group_id:
-                        activeGroup.id,
-
-                    description,
-
-                    amount,
-
-                    paid_by:
-                        paidBy,
-
-                    split_type:
-                        splitType
-
-                })
-                .select()
-                .single();
+showToast("Expense added successfully!");
 
 
         if (error) {
