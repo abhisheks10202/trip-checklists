@@ -2485,14 +2485,19 @@ document.getElementById("groupForm").onsubmit = async event => {
 
         }
 
+const dbSplitMethod =
+    splitType === "equal"
+        ? "equal"
+        : "exact";
+
 const { data: expense, error } = await db
     .from("expenses")
     .insert({
-        group_id: groupId,
+        group_id: activeGroup.id,
         description: description,
         amount: Number(amount),
         paid_by: paidBy,
-        split_method: splitType,
+        split_method: dbSplitMethod,
         split_type: splitType
     })
     .select()
@@ -2506,16 +2511,6 @@ if (error) {
 
 showToast("Expense added successfully!");
 
-
-        if (error) {
-
-            showToast(
-                error.message
-            );
-
-            return;
-
-        }
 
 
         const splitRows =
