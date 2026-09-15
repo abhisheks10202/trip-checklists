@@ -103,13 +103,34 @@ async function homePage() {
         and never forget the important stuff.
       </p>
 
-      <div class="actions">
-        ${currentSession
-            ? `<a href="/?page=create" class="btn">+ Create Checklist</a>`
-            : `<a href="/?page=signup" class="btn">Create Your First Checklist</a>`
-        }
-        <a href="#featured" class="btn secondary">Explore</a>
-      </div>
+     <div class="actions">
+
+    ${currentSession
+        ? `
+            <a href="/?page=create" class="btn">
+                + Create Checklist
+            </a>
+
+            <a href="/?page=expenses" class="btn secondary">
+                💰 Expenses
+            </a>
+        `
+        : `
+            <a href="/?page=signup" class="btn">
+                Create Your First Checklist
+            </a>
+
+            <a href="/?page=login" class="btn secondary">
+                💰 Expenses
+            </a>
+        `
+    }
+
+    <a href="#featured" class="btn secondary">
+        Explore
+    </a>
+
+</div>
     </section>
 
     <section id="featured" class="section">
@@ -809,34 +830,41 @@ function renderChecklist(list, categories) {
 
       </div>
 
-      <div class="share-row">
+<div class="share-row">
 
-        <button class="btn" id="shareBtn">
-          🔗 Share
-        </button>
+  <button class="btn" id="shareBtn">
+    🔗 Share
+  </button>
 
-        <button class="btn secondary" id="copyBtn">
-          📋 Copy link
-        </button>
+  <button class="btn secondary" id="copyBtn">
+    📋 Copy link
+  </button>
 
-        <button class="btn secondary" id="printBtn">
-          🖨️ Print / PDF
-        </button>
+  <button class="btn secondary" id="printBtn">
+    🖨️ Print / PDF
+  </button>
 
-        ${currentSession &&
-            currentSession.user.id === list.owner_id
-            ? `
-              <a
-                class="btn secondary"
-                href="/?page=dashboard"
-              >
-                ⚙️ Dashboard
-              </a>
-            `
-            : ""
-        }
+  <a
+    class="btn secondary"
+    href="/?page=expenses&checklist=${encodeURIComponent(list.id)}"
+  >
+    💰 Expenses
+  </a>
 
-      </div>
+  ${currentSession &&
+      currentSession.user.id === list.owner_id
+      ? `
+        <a
+          class="btn secondary"
+          href="/?page=dashboard"
+        >
+          ⚙️ Dashboard
+        </a>
+      `
+      : ""
+  }
+
+</div>
 
     </section>
 
@@ -1014,6 +1042,1756 @@ async function protectedChecklistPage(slug, list) {
             );
         };
 }
+
+async function expensesPage() {
+
+    await refreshNav();
+
+    if (!currentSession) {
+        window.location.href = "/?page=login";
+        return;
+    }
+
+    const params = new URLSearchParams(
+        window.location.search
+    );
+
+    const checklistId = params.get("checklist");
+
+    let groups = [];
+    let activeGroup = null;
+    let members = [];
+    let expenses = [];
+
+    main.innerHTML = layout(`
+        <section class="section">
+
+            <div class="section-title">
+                <div>
+                    <span class="badge">💰 Expenses</span>
+                    <h2>Trip Expenses</h2>
+                    <p style="color:var(--muted)">
+                        Split travel expenses with your group.
+                    </p>
+                </div>
+
+                <button
+                    class="btn"
+                    id="createGroupBtn"
+                >
+                    + Create Group
+                </button>
+            </div>
+
+            <div id="expenseContent">
+                <div class="empty">
+                    Loading expense groups...
+                </div>
+            </div>
+
+        </section>
+
+        <!-- GROUP MODAL -->
+
+        <div
+            id="groupModal"
+            style="
+                display:none;
+                position:fixed;
+                inset:0;
+                background:rgba(0,0,0,.45);
+                z-index:1000;
+                padding:20px;
+                overflow:auto;
+            "
+        >
+
+            <div
+                class="form-card"
+                style="margin:40px auto"
+            >
+
+                <h2>Create Expense Group</h2>
+
+                <p style="color:var(--muted)">
+                    Create a group for your trip expenses.
+                </p>
+
+                <form id="groupForm">
+
+                    <div class="form-group">
+
+                        <label>
+                            Group name
+                        </label>
+
+                        <input
+                            id="groupName"
+                            required
+                            placeholder="Ladakh Trip"
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Description
+                        </label>
+
+                        <textarea
+                            id="groupDescription"
+                            placeholder="Expenses for our Ladakh trip"
+                        ></textarea>
+
+                    </div>
+
+                    <div
+                        style="
+                            display:flex;
+                            gap:10px;
+                        "
+                    >
+
+                        <button
+                            class="btn"
+                            type="submit"
+                        >
+                            Create Group
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn secondary"
+                            id="closeGroupBtn"
+                        >
+                            Cancel
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        <!-- MEMBER MODAL -->
+
+        <div
+            id="memberModal"
+            style="
+                display:none;
+                position:fixed;
+                inset:0;
+                background:rgba(0,0,0,.45);
+                z-index:1000;
+                padding:20px;
+                overflow:auto;
+            "
+        >
+
+            <div
+                class="form-card"
+                style="margin:40px auto"
+            >
+
+                <h2>Add Person</h2>
+
+                <form id="memberForm">
+
+                    <div class="form-group">
+
+                        <label>
+                            Name
+                        </label>
+
+                        <input
+                            id="memberName"
+                            required
+                            placeholder="Rahul"
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Email
+                        </label>
+
+                        <input
+                            id="memberEmail"
+                            type="email"
+                            placeholder="rahul@example.com"
+                        >
+
+                    </div>
+
+                    <div
+                        style="
+                            display:flex;
+                            gap:10px;
+                        "
+                    >
+
+                        <button
+                            class="btn"
+                            type="submit"
+                        >
+                            Add Person
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn secondary"
+                            id="closeMemberBtn"
+                        >
+                            Cancel
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+        <!-- EXPENSE MODAL -->
+
+        <div
+            id="expenseModal"
+            style="
+                display:none;
+                position:fixed;
+                inset:0;
+                background:rgba(0,0,0,.45);
+                z-index:1000;
+                padding:20px;
+                overflow:auto;
+            "
+        >
+
+            <div
+                class="form-card"
+                style="margin:40px auto"
+            >
+
+                <h2>Add Expense</h2>
+
+                <form id="expenseForm">
+
+                    <div class="form-group">
+
+                        <label>
+                            Expense name
+                        </label>
+
+                        <input
+                            id="expenseName"
+                            required
+                            placeholder="Water Bottle"
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Amount
+                        </label>
+
+                        <input
+                            id="expenseAmount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            required
+                            placeholder="500"
+                        >
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Paid by
+                        </label>
+
+                        <select
+                            id="expensePaidBy"
+                            required
+                        ></select>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Split type
+                        </label>
+
+                        <select id="splitType">
+
+                            <option value="equal">
+                                ⚖️ Split equally
+                            </option>
+
+                            <option value="custom">
+                                ✏️ Custom split
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+                            Split between
+                        </label>
+
+                        <div id="expenseMembers"></div>
+
+                    </div>
+
+                    <div
+                        id="customSplitArea"
+                        style="display:none"
+                    >
+
+                        <label>
+                            Custom amounts
+                        </label>
+
+                        <div id="customAmounts"></div>
+
+                    </div>
+
+                    <br>
+
+                    <div
+                        style="
+                            display:flex;
+                            gap:10px;
+                        "
+                    >
+
+                        <button
+                            class="btn"
+                            type="submit"
+                        >
+                            Add Expense
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn secondary"
+                            id="closeExpenseBtn"
+                        >
+                            Cancel
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+    `);
+
+
+    // ============================================
+    // LOAD GROUPS
+    // ============================================
+
+    async function loadGroups() {
+
+        const { data, error } = await db
+            .from("expense_groups")
+            .select("*")
+            .eq(
+                "owner_id",
+                currentSession.user.id
+            )
+            .order(
+                "created_at",
+                { ascending: false }
+            );
+
+        if (error) {
+            throw error;
+        }
+
+        groups = data || [];
+
+        renderGroups();
+    }
+
+
+    // ============================================
+    // RENDER GROUPS
+    // ============================================
+
+    function renderGroups() {
+
+        const container =
+            document.getElementById(
+                "expenseContent"
+            );
+
+        if (!groups.length) {
+
+            container.innerHTML = `
+
+                <div class="empty">
+
+                    <h3>
+                        No expense groups yet
+                    </h3>
+
+                    <p>
+                        Create a group for your trip
+                        and start splitting expenses.
+                    </p>
+
+                    <button
+                        class="btn"
+                        id="emptyCreateGroup"
+                    >
+                        + Create Expense Group
+                    </button>
+
+                </div>
+
+            `;
+
+            document.getElementById(
+                "emptyCreateGroup"
+            ).onclick = openGroupModal;
+
+            return;
+        }
+
+
+        container.innerHTML = `
+
+            <div class="grid">
+
+                ${groups.map(group => `
+
+                    <div class="card">
+
+                        <span class="badge">
+                            💰 Expense Group
+                        </span>
+
+                        <h3>
+                            ${escapeHtml(group.name)}
+                        </h3>
+
+                        <p>
+                            ${escapeHtml(
+                                group.description || ""
+                            )}
+                        </p>
+
+                        <button
+                            class="btn"
+                            data-group="${group.id}"
+                            class="open-group"
+                        >
+                            Open Group
+                        </button>
+
+                    </div>
+
+                `).join("")}
+
+            </div>
+
+        `;
+
+
+        container
+            .querySelectorAll(
+                "[data-group]"
+            )
+            .forEach(button => {
+
+                button.onclick = () => {
+
+                    openGroup(
+                        button.dataset.group
+                    );
+
+                };
+
+            });
+
+    }
+
+
+    // ============================================
+    // CREATE GROUP MODAL
+    // ============================================
+
+    function openGroupModal() {
+
+        document.getElementById(
+            "groupModal"
+        ).style.display = "block";
+
+    }
+
+
+    function closeGroupModal() {
+
+        document.getElementById(
+            "groupModal"
+        ).style.display = "none";
+
+    }
+
+
+    document.getElementById(
+        "createGroupBtn"
+    ).onclick = openGroupModal;
+
+
+    document.getElementById(
+        "closeGroupBtn"
+    ).onclick = closeGroupModal;
+
+
+    // ============================================
+    // CREATE GROUP
+    // ============================================
+
+    document.getElementById(
+        "groupForm"
+    ).onsubmit = async event => {
+
+        event.preventDefault();
+
+        const name =
+            document.getElementById(
+                "groupName"
+            ).value.trim();
+
+        const description =
+            document.getElementById(
+                "groupDescription"
+            ).value.trim();
+
+
+        const { data, error } = await db
+            .from("expense_groups")
+            .insert({
+
+                owner_id:
+                    currentSession.user.id,
+
+                checklist_id:
+                    checklistId || null,
+
+                name,
+
+                description
+
+            })
+            .select()
+            .single();
+
+
+        if (error) {
+
+            showToast(error.message);
+
+            return;
+
+        }
+
+
+        /*
+         * Add owner automatically
+         * as first member.
+         */
+
+        const { error: memberError } =
+            await db
+                .from("expense_members")
+                .insert({
+
+                    group_id: data.id,
+
+                    name: "Me",
+
+                    email:
+                        currentSession.user.email,
+
+                    user_id:
+                        currentSession.user.id
+
+                });
+
+
+        if (memberError) {
+
+            showToast(
+                memberError.message
+            );
+
+            return;
+
+        }
+
+
+        closeGroupModal();
+
+        showToast(
+            "Expense group created!"
+        );
+
+        await loadGroups();
+
+        openGroup(data.id);
+
+    };
+
+
+    // ============================================
+    // OPEN GROUP
+    // ============================================
+
+    async function openGroup(groupId) {
+
+        activeGroup =
+            groups.find(
+                group =>
+                    group.id === groupId
+            );
+
+
+        if (!activeGroup) {
+
+            const { data, error } =
+                await db
+                    .from("expense_groups")
+                    .select("*")
+                    .eq("id", groupId)
+                    .single();
+
+            if (error) {
+
+                showToast(
+                    error.message
+                );
+
+                return;
+
+            }
+
+            activeGroup = data;
+
+        }
+
+
+        await loadMembers();
+
+        await loadExpenses();
+
+        renderGroup();
+
+    }
+
+
+    // ============================================
+    // MEMBERS
+    // ============================================
+
+    async function loadMembers() {
+
+        const { data, error } =
+            await db
+                .from("expense_members")
+                .select("*")
+                .eq(
+                    "group_id",
+                    activeGroup.id
+                )
+                .order("created_at");
+
+
+        if (error) {
+
+            showToast(
+                error.message
+            );
+
+            return;
+
+        }
+
+        members = data || [];
+
+    }
+
+
+    async function addMember() {
+
+        document.getElementById(
+            "memberModal"
+        ).style.display = "block";
+
+    }
+
+
+    document.getElementById(
+        "closeMemberBtn"
+    ).onclick = () => {
+
+        document.getElementById(
+            "memberModal"
+        ).style.display = "none";
+
+    };
+
+
+    document.getElementById(
+        "memberForm"
+    ).onsubmit = async event => {
+
+        event.preventDefault();
+
+
+        const name =
+            document.getElementById(
+                "memberName"
+            ).value.trim();
+
+        const email =
+            document.getElementById(
+                "memberEmail"
+            ).value.trim();
+
+
+        const { error } =
+            await db
+                .from("expense_members")
+                .insert({
+
+                    group_id:
+                        activeGroup.id,
+
+                    name,
+
+                    email:
+                        email || null
+
+                });
+
+
+        if (error) {
+
+            showToast(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        document.getElementById(
+            "memberForm"
+        ).reset();
+
+
+        document.getElementById(
+            "memberModal"
+        ).style.display = "none";
+
+
+        await loadMembers();
+
+        renderGroup();
+
+        showToast(
+            `${name} added!`
+        );
+
+    };
+
+
+    // ============================================
+    // DELETE MEMBER
+    // ============================================
+
+    async function deleteMember(memberId) {
+
+        if (
+            !confirm(
+                "Remove this person from the group?"
+            )
+        ) {
+            return;
+        }
+
+
+        const { error } =
+            await db
+                .from("expense_members")
+                .delete()
+                .eq(
+                    "id",
+                    memberId
+                );
+
+
+        if (error) {
+
+            showToast(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        await loadMembers();
+
+        await loadExpenses();
+
+        renderGroup();
+
+    }
+
+
+    // ============================================
+    // LOAD EXPENSES
+    // ============================================
+
+    async function loadExpenses() {
+
+        const { data, error } =
+            await db
+                .from("expenses")
+                .select(`
+                    *,
+                    expense_splits(*)
+                `)
+                .eq(
+                    "group_id",
+                    activeGroup.id
+                )
+                .order(
+                    "created_at",
+                    { ascending: false }
+                );
+
+
+        if (error) {
+
+            showToast(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        expenses = data || [];
+
+    }
+
+
+    // ============================================
+    // RENDER GROUP
+    // ============================================
+
+    function renderGroup() {
+
+        const container =
+            document.getElementById(
+                "expenseContent"
+            );
+
+
+        container.innerHTML = `
+
+            <div>
+
+                <button
+                    class="btn secondary"
+                    id="backGroups"
+                >
+                    ← Groups
+                </button>
+
+                <div
+                    class="card"
+                    style="margin-top:20px"
+                >
+
+                    <span class="badge">
+                        💰 Expense Group
+                    </span>
+
+                    <h2>
+                        ${escapeHtml(
+                            activeGroup.name
+                        )}
+                    </h2>
+
+                    <p>
+                        ${escapeHtml(
+                            activeGroup.description || ""
+                        )}
+                    </p>
+
+                </div>
+
+
+                <!-- PEOPLE -->
+
+                <div
+                    class="card"
+                    style="margin-top:18px"
+                >
+
+                    <div class="section-title">
+
+                        <h3>
+                            👥 People
+                        </h3>
+
+                        <button
+                            class="btn"
+                            id="addPersonBtn"
+                        >
+                            + Add Person
+                        </button>
+
+                    </div>
+
+                    ${members.map(
+                        member => `
+
+                        <div
+                            class="item"
+                        >
+
+                            <div style="flex:1">
+
+                                <strong>
+                                    ${escapeHtml(
+                                        member.name
+                                    )}
+                                </strong>
+
+                                <br>
+
+                                <span
+                                    style="
+                                        color:var(--muted)
+                                    "
+                                >
+                                    ${escapeHtml(
+                                        member.email || ""
+                                    )}
+                                </span>
+
+                            </div>
+
+                            ${
+                                member.user_id !==
+                                currentSession.user.id
+                                    ? `
+                                    <button
+                                        class="btn danger remove-member"
+                                        data-id="${member.id}"
+                                    >
+                                        Remove
+                                    </button>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+
+                    `
+                    ).join("")}
+
+                </div>
+
+
+                <!-- EXPENSES -->
+
+                <div
+                    class="card"
+                    style="margin-top:18px"
+                >
+
+                    <div class="section-title">
+
+                        <h3>
+                            💸 Expenses
+                        </h3>
+
+                        <button
+                            class="btn"
+                            id="addExpenseButton"
+                        >
+                            + Add Expense
+                        </button>
+
+                    </div>
+
+
+                    ${
+                        expenses.length
+                            ? expenses.map(
+                                expense => {
+
+                                    const payer =
+                                        members.find(
+                                            member =>
+                                                member.id ===
+                                                expense.paid_by
+                                        );
+
+
+                                    return `
+
+                                        <div
+                                            class="item"
+                                        >
+
+                                            <div
+                                                style="flex:1"
+                                            >
+
+                                                <strong>
+                                                    ${escapeHtml(
+                                                        expense.description
+                                                    )}
+                                                </strong>
+
+                                                <br>
+
+                                                <span
+                                                    style="
+                                                        color:var(--muted)
+                                                    "
+                                                >
+                                                    Paid by
+                                                    ${escapeHtml(
+                                                        payer?.name ||
+                                                        "Unknown"
+                                                    )}
+                                                </span>
+
+                                            </div>
+
+                                            <strong>
+                                                ₹${Number(
+                                                    expense.amount
+                                                ).toFixed(2)}
+                                            </strong>
+
+                                        </div>
+
+                                    `;
+
+                                }
+                            ).join("")
+                            : `
+                                <div class="empty">
+                                    No expenses yet.
+                                </div>
+                            `
+                    }
+
+                </div>
+
+
+                <!-- BALANCES -->
+
+                <div
+                    class="card"
+                    style="margin-top:18px"
+                >
+
+                    <h3>
+                        📊 Balances
+                    </h3>
+
+                    <div id="balances">
+                        Calculating...
+                    </div>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        document.getElementById(
+            "backGroups"
+        ).onclick = () => {
+
+            activeGroup = null;
+
+            renderGroups();
+
+        };
+
+
+        document.getElementById(
+            "addPersonBtn"
+        ).onclick = addMember;
+
+
+        document.getElementById(
+            "addExpenseButton"
+        ).onclick = openExpenseModal;
+
+
+        document
+            .querySelectorAll(
+                ".remove-member"
+            )
+            .forEach(button => {
+
+                button.onclick = () => {
+
+                    deleteMember(
+                        button.dataset.id
+                    );
+
+                };
+
+            });
+
+
+        renderBalances();
+
+    }
+
+
+    // ============================================
+    // EXPENSE MODAL
+    // ============================================
+
+    function openExpenseModal() {
+
+        if (members.length < 1) {
+
+            showToast(
+                "Add at least one person first."
+            );
+
+            return;
+
+        }
+
+
+        const paidBy =
+            document.getElementById(
+                "expensePaidBy"
+            );
+
+
+        paidBy.innerHTML =
+            members.map(
+                member => `
+
+                    <option
+                        value="${member.id}"
+                    >
+                        ${escapeHtml(
+                            member.name
+                        )}
+                    </option>
+
+                `
+            ).join("");
+
+
+        renderExpenseMembers();
+
+
+        document.getElementById(
+            "expenseModal"
+        ).style.display = "block";
+
+    }
+
+
+    document.getElementById(
+        "closeExpenseBtn"
+    ).onclick = () => {
+
+        document.getElementById(
+            "expenseModal"
+        ).style.display = "none";
+
+    };
+
+
+    // ============================================
+    // SPLIT MEMBERS
+    // ============================================
+
+    function renderExpenseMembers() {
+
+        const container =
+            document.getElementById(
+                "expenseMembers"
+            );
+
+
+        container.innerHTML =
+            members.map(
+                member => `
+
+                    <label
+                        style="
+                            display:flex;
+                            gap:10px;
+                            padding:8px 0;
+                        "
+                    >
+
+                        <input
+                            type="checkbox"
+                            class="expense-member"
+                            value="${member.id}"
+                            checked
+                        >
+
+                        <span>
+                            ${escapeHtml(
+                                member.name
+                            )}
+                        </span>
+
+                    </label>
+
+                `
+            ).join("");
+
+    }
+
+
+    document.getElementById(
+        "splitType"
+    ).onchange = event => {
+
+        const custom =
+            event.target.value === "custom";
+
+
+        document.getElementById(
+            "customSplitArea"
+        ).style.display =
+            custom
+                ? "block"
+                : "none";
+
+
+        if (custom) {
+
+            renderCustomAmounts();
+
+        }
+
+    };
+
+
+    function renderCustomAmounts() {
+
+        const container =
+            document.getElementById(
+                "customAmounts"
+            );
+
+
+        const selected =
+            [
+                ...document.querySelectorAll(
+                    ".expense-member:checked"
+                )
+            ];
+
+
+        container.innerHTML =
+            selected.map(
+                checkbox => {
+
+                    const member =
+                        members.find(
+                            m =>
+                                m.id ===
+                                checkbox.value
+                        );
+
+
+                    return `
+
+                        <div
+                            class="form-group"
+                        >
+
+                            <label>
+                                ${escapeHtml(
+                                    member.name
+                                )}
+                            </label>
+
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="custom-amount"
+                                data-member="${member.id}"
+                                placeholder="0"
+                            >
+
+                        </div>
+
+                    `;
+
+                }
+            ).join("");
+
+    }
+
+
+    // ============================================
+    // ADD EXPENSE
+    // ============================================
+
+    document.getElementById(
+        "expenseForm"
+    ).onsubmit = async event => {
+
+        event.preventDefault();
+
+
+        const description =
+            document.getElementById(
+                "expenseName"
+            ).value.trim();
+
+
+        const amount =
+            Number(
+                document.getElementById(
+                    "expenseAmount"
+                ).value
+            );
+
+
+        const paidBy =
+            document.getElementById(
+                "expensePaidBy"
+            ).value;
+
+
+        const splitType =
+            document.getElementById(
+                "splitType"
+            ).value;
+
+
+        const selected =
+            [
+                ...document.querySelectorAll(
+                    ".expense-member:checked"
+                )
+            ].map(
+                checkbox =>
+                    checkbox.value
+            );
+
+
+        if (!selected.length) {
+
+            showToast(
+                "Select at least one person."
+            );
+
+            return;
+
+        }
+
+
+        let splits = [];
+
+
+        if (splitType === "equal") {
+
+            const share =
+                amount / selected.length;
+
+
+            splits =
+                selected.map(
+                    memberId => ({
+
+                        member_id:
+                            memberId,
+
+                        amount:
+                            Number(
+                                share.toFixed(2)
+                            )
+
+                    })
+                );
+
+        } else {
+
+            const inputs =
+                [
+                    ...document.querySelectorAll(
+                        ".custom-amount"
+                    )
+                ];
+
+
+            splits =
+                inputs.map(
+                    input => ({
+
+                        member_id:
+                            input.dataset.member,
+
+                        amount:
+                            Number(
+                                input.value || 0
+                            )
+
+                    })
+                );
+
+
+            const total =
+                splits.reduce(
+                    (sum, split) =>
+                        sum + split.amount,
+                    0
+                );
+
+
+            if (
+                Math.abs(
+                    total - amount
+                ) > 0.01
+            ) {
+
+                showToast(
+                    `Custom split must equal ₹${amount.toFixed(2)}`
+                );
+
+                return;
+
+            }
+
+        }
+
+
+        const { data: expense, error } =
+            await db
+                .from("expenses")
+                .insert({
+
+                    group_id:
+                        activeGroup.id,
+
+                    description,
+
+                    amount,
+
+                    paid_by:
+                        paidBy,
+
+                    split_type:
+                        splitType
+
+                })
+                .select()
+                .single();
+
+
+        if (error) {
+
+            showToast(
+                error.message
+            );
+
+            return;
+
+        }
+
+
+        const splitRows =
+            splits.map(
+                split => ({
+
+                    expense_id:
+                        expense.id,
+
+                    member_id:
+                        split.member_id,
+
+                    amount:
+                        split.amount
+
+                })
+            );
+
+
+        const { error: splitError } =
+            await db
+                .from("expense_splits")
+                .insert(splitRows);
+
+
+        if (splitError) {
+
+            showToast(
+                splitError.message
+            );
+
+            return;
+
+        }
+
+
+        document.getElementById(
+            "expenseForm"
+        ).reset();
+
+
+        document.getElementById(
+            "expenseModal"
+        ).style.display = "none";
+
+
+        await loadExpenses();
+
+        renderGroup();
+
+
+        showToast(
+            "Expense added successfully!"
+        );
+
+    };
+
+
+    // ============================================
+    // BALANCES
+    // ============================================
+
+    async function renderBalances() {
+
+        const container =
+            document.getElementById(
+                "balances"
+            );
+
+
+        if (!container) {
+            return;
+        }
+
+
+        const balances = {};
+
+
+        members.forEach(
+            member => {
+
+                balances[member.id] = 0;
+
+            }
+        );
+
+
+        expenses.forEach(
+            expense => {
+
+                /*
+                 * Person who paid gets credit.
+                 */
+
+                balances[
+                    expense.paid_by
+                ] += Number(
+                    expense.amount
+                );
+
+
+                /*
+                 * Every split participant
+                 * owes their split amount.
+                 */
+
+                expense.expense_splits?.forEach(
+                    split => {
+
+                        balances[
+                            split.member_id
+                        ] -= Number(
+                            split.amount
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        container.innerHTML =
+            members.map(
+                member => {
+
+                    const balance =
+                        balances[
+                            member.id
+                        ] || 0;
+
+
+                    if (
+                        Math.abs(balance)
+                        < 0.01
+                    ) {
+
+                        return `
+
+                            <div class="item">
+
+                                <span>
+                                    ${escapeHtml(
+                                        member.name
+                                    )}
+                                </span>
+
+                                <strong>
+                                    Settled ✓
+                                </strong>
+
+                            </div>
+
+                        `;
+
+                    }
+
+
+                    if (balance > 0) {
+
+                        return `
+
+                            <div class="item">
+
+                                <span>
+                                    ${escapeHtml(
+                                        member.name
+                                    )}
+                                </span>
+
+                                <strong
+                                    style="
+                                        color:var(--success)
+                                    "
+                                >
+                                    Gets ₹${balance.toFixed(2)}
+                                </strong>
+
+                            </div>
+
+                        `;
+
+                    }
+
+
+                    return `
+
+                        <div class="item">
+
+                            <span>
+                                ${escapeHtml(
+                                    member.name
+                                )}
+                            </span>
+
+                            <strong
+                                style="
+                                    color:var(--danger)
+                                "
+                            >
+                                Owes ₹${Math.abs(
+                                    balance
+                                ).toFixed(2)}
+                            </strong>
+
+                        </div>
+
+                    `;
+
+                }
+            ).join("");
+
+    }
+
+
+    // ============================================
+    // START
+    // ============================================
+
+    try {
+
+        await loadGroups();
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById(
+            "expenseContent"
+        ).innerHTML = `
+
+            <div class="empty">
+
+                <h3>
+                    Something went wrong
+                </h3>
+
+                <p>
+                    ${escapeHtml(
+                        error.message
+                    )}
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
 
 // async function checklistPage(slug) {
 
@@ -1204,6 +2982,10 @@ async function router() {
         await createPage();
         return;
     }
+    if (page === "expenses") {
+    await expensesPage();
+    return;
+}   
 
     await homePage();
 }
