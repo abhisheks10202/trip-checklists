@@ -1570,100 +1570,74 @@ async function expensesPage() {
     // CREATE GROUP
     // ============================================
 
-    document.getElementById(
-        "groupForm"
-    ).onsubmit = async event => {
+// ============================================
+// CREATE GROUP
+// ============================================
 
-        event.preventDefault();
+document.getElementById("groupForm").onsubmit = async event => { 
+    event.preventDefault(); 
+ 
+    const name = document 
+        .getElementById("groupName") 
+        .value 
+        .trim(); 
+ 
+    const description = document 
+        .getElementById("groupDescription") 
+        .value 
+        .trim(); 
+ 
+    if (!name) { 
+        showToast("Please enter a group name."); 
+        return; 
+    } 
+ 
+    const checklistId = new URLSearchParams( 
+        window.location.search 
+    ).get("checklist"); 
+ 
+    const { data: group, error } = await db 
+        .from("expense_groups") 
+        .insert({ 
+            checklist_id: checklistId || null, 
+            name, 
+            description: description || null, 
+            owner_id: currentSession.user.id 
+        }) 
+        .select() 
+        .single(); 
+ 
+    if (error) { 
+        console.error("Create group error:", error); 
+        showToast(error.message); 
+        return; 
+    } 
+ 
+    // Add owner as first member 
+    const { error: memberError } = await db 
+        .from("expense_members") 
+        .insert({ 
+            group_id: group.id, 
+            name: "Me", 
+            email: currentSession.user.email, 
+            user_id: currentSession.user.id 
+        }); 
+ 
+    if (memberError) { 
+        console.error("Add owner member error:", memberError); 
+        showToast(memberError.message); 
+        return; 
+    } 
+ 
+    document.getElementById("groupForm").reset(); 
+    closeGroupModal(); 
+ 
+    showToast("Expense group created!"); 
+ 
+    await loadGroups(); 
+    await openGroup(group.id); 
+};
 
-        const name =
-            document.getElementById(
-                "groupName"
-            ).value.trim();
-
-        const description =
-            document.getElementById(
-                "groupDescription"
-            ).value.trim();
-
-
-        const checklistId =
-    new URLSearchParams(window.location.search).get("checklist");
-
-
-
-const { data: group, error } = await db
-    .from("expense_groups")
-    .insert({
-        checklist_id: checklistId,
-        name: groupName,
-        description: groupDescription,
-        owner_id: currentSession.user.id
-    })
-    .select()
-    .single();
-
-if (error) {
-    console.error("Create group error:", error);
-    showToast(error.message);
-    return;
-}
-
-
-        if (error) {
-
-            showToast(error.message);
-
-            return;
-
-        }
-
-
-        /*
-         * Add owner automatically
-         * as first member.
-         */
-
-        const { error: memberError } =
-            await db
-                .from("expense_members")
-                .insert({
-
-                    group_id: data.id,
-
-                    name: "Me",
-
-                    email:
-                        currentSession.user.email,
-
-                    user_id:
-                        currentSession.user.id
-
-                });
-
-
-        if (memberError) {
-
-            showToast(
-                memberError.message
-            );
-
-            return;
-
-        }
-
-
-        closeGroupModal();
-
-        showToast(
-            "Expense group created!"
-        );
-
-        await loadGroups();
-
-        openGroup(data.id);
-
-    };
 
 
     // ============================================
